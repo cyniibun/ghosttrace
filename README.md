@@ -43,7 +43,23 @@ and zips that folder to:
 ~/Desktop/GhostTrace.zip
 ```
 
-The build script also removes `~/.ghosttrace_save.json` before packaging so the gift build starts from the beginning.
+The build script also removes `~/.ghosttrace_save.json` before packaging so local testing does not resume from an old developer save.
+
+The launcher sets `GHOSTTRACE_SAVE_FILE` so the delivered game stores progress in the same folder as the executable:
+
+```text
+GhostTrace_Delivery/.ghosttrace_save.json
+```
+
+That keeps the gift build isolated from any developer save state in the user home directory.
+
+The build script ad-hoc signs the executable with:
+
+```bash
+codesign --force --deep --sign - dist/GhostTrace
+```
+
+Ad-hoc signing helps, but it is not Apple notarization. A zip downloaded from GitHub may still trigger Gatekeeper. For a fully clean macOS download experience, sign with an Apple Developer ID certificate and notarize. For a one-person gift, the practical fallback is right-clicking `Launch_GhostTrace.command` and choosing Open.
 
 ## Package For A Friend
 
@@ -85,5 +101,7 @@ Progress is saved automatically after each recovered fragment at:
 ```text
 ~/.ghosttrace_save.json
 ```
+
+When launched through `Launch_GhostTrace.command`, the save file is instead stored next to the delivery executable as `.ghosttrace_save.json`.
 
 The save file contains the current stage, solved puzzle IDs, timestamp, and an HMAC SHA256 checksum. If the file is modified outside the game, GhostTrace aborts recovery with an archive corruption warning.
