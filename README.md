@@ -14,72 +14,61 @@ python3 -m pip install -r requirements.txt
 python3 main.py
 ```
 
+If `ghosttrace_data.dat` exists next to `main.py`, GhostTrace loads that encrypted data file first. Otherwise it uses `private_puzzles.py` when present, and falls back to `sample_puzzles.py`.
+
 ## Test
 
 ```bash
 python3 -m pytest -q
 ```
 
-## Build On macOS
+## Preferred macOS Delivery
 
-Do not use `--windowed`; GhostTrace is a terminal game.
+Use the Python-source delivery mode to avoid PyInstaller/Gatekeeper malware warnings.
 
 ```bash
 chmod +x build_macos.sh
 ./build_macos.sh
 ```
 
-The build script runs tests, builds `dist/GhostTrace`, creates:
+The build script:
+
+- Clears `~/.ghosttrace_save.json`.
+- Runs tests.
+- Generates `ghosttrace_data.dat` from local private puzzle content.
+- Stores answers as hashes only.
+- Creates `~/Desktop/GhostTrace_Delivery`.
+- Creates `~/Desktop/GhostTrace.zip`.
+
+Delivery zip contents:
 
 ```text
-~/Desktop/GhostTrace_Delivery/
-  GhostTrace
+GhostTrace_Delivery/
   Launch_GhostTrace.command
+  main.py
+  requirements.txt
+  ghosttrace_data.dat
 ```
 
-and zips that folder to:
+Do not send the repo, tests, README, `private_puzzles.py`, `sample_puzzles.py`, build folders, dist folders, or raw `.py` puzzle datasets.
 
-```text
-~/Desktop/GhostTrace.zip
-```
+The launcher:
 
-The build script also removes `~/.ghosttrace_save.json` before packaging so local testing does not resume from an old developer save.
+- Changes into its own directory.
+- Checks that `python3` exists.
+- Installs requirements quietly.
+- Uses a local save file at `GhostTrace_Delivery/.ghosttrace_save.json`.
+- Runs `python3 main.py`.
+- Keeps Terminal open after exit.
 
-The launcher sets `GHOSTTRACE_SAVE_FILE` so the delivered game stores progress in the same folder as the executable:
+## Optional PyInstaller Build
 
-```text
-GhostTrace_Delivery/.ghosttrace_save.json
-```
-
-That keeps the gift build isolated from any developer save state in the user home directory.
-
-The build script ad-hoc signs the executable with:
+PyInstaller remains available, but it is not the preferred delivery method unless the app is properly Developer ID signed and notarized.
 
 ```bash
-codesign --force --deep --sign - dist/GhostTrace
+chmod +x build_pyinstaller.sh
+./build_pyinstaller.sh
 ```
-
-Ad-hoc signing helps, but it is not Apple notarization. A zip downloaded from GitHub may still trigger Gatekeeper. For a fully clean macOS download experience, sign with an Apple Developer ID certificate and notarize. For a one-person gift, the practical fallback is right-clicking `Launch_GhostTrace.command` and choosing Open.
-
-## Package For A Friend
-
-Build from your private local folder, not the public repo:
-
-```bash
-cd ~/Desktop/ghosttrace-app
-./build_macos.sh
-```
-
-Send only:
-
-```text
-GhostTrace.zip
-  GhostTrace_Delivery/
-    GhostTrace
-    Launch_GhostTrace.command
-```
-
-Do not send the repo, source files, tests, README, private puzzle dataset, sample puzzle dataset, build folders, dist folder, or save files.
 
 ## Public Repo Safety
 
@@ -90,18 +79,25 @@ Real proposal content belongs only in ignored local files such as:
 ```text
 private_puzzles.py
 COMMANDS_REFERENCE.local.md
+ghosttrace_data.dat
 ```
 
-If `private_puzzles.py` exists, GhostTrace uses it. If it is missing, the app falls back to the sample dataset and still runs.
+`ghosttrace_data.dat` is generated for delivery from private content. It should not be committed to a public engine repo.
 
 ## Save Data
 
-Progress is saved automatically after each recovered fragment at:
+Progress is saved automatically after each recovered fragment.
+
+Default local development save:
 
 ```text
 ~/.ghosttrace_save.json
 ```
 
-When launched through `Launch_GhostTrace.command`, the save file is instead stored next to the delivery executable as `.ghosttrace_save.json`.
+Launcher delivery save:
+
+```text
+GhostTrace_Delivery/.ghosttrace_save.json
+```
 
 The save file contains the current stage, solved puzzle IDs, timestamp, and an HMAC SHA256 checksum. If the file is modified outside the game, GhostTrace aborts recovery with an archive corruption warning.
